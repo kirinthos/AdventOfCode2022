@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use take_until::TakeUntilExt;
 
 use crate::Problem;

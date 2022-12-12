@@ -1,4 +1,6 @@
 pub mod problem1;
+pub mod problem10;
+pub mod problem11;
 pub mod problem2;
 pub mod problem3;
 pub mod problem4;
@@ -6,6 +8,7 @@ pub mod problem5;
 pub mod problem6;
 pub mod problem7;
 pub mod problem8;
+pub mod problem9;
 
 use num_enum::TryFromPrimitive;
 use std::{
@@ -26,6 +29,9 @@ pub enum Problems {
     Problem6,
     Problem7,
     Problem8,
+    Problem9,
+    Problem10,
+    Problem11,
 }
 
 pub trait Problem {

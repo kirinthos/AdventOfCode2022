@@ -8,6 +8,9 @@ use aoc::*;
 struct Args {
     #[clap(short, long, value_parser)]
     problem: u8,
+
+    #[clap(short, long, value_parser, default_value_t = false)]
+    example: bool,
 }
 
 fn main() {
@@ -30,13 +33,20 @@ fn main() {
         Problems::Problem6 => Box::new(problem6::Problem6 {}),
         Problems::Problem7 => Box::new(problem7::Problem7 {}),
         Problems::Problem8 => Box::new(problem8::Problem8 {}),
+        Problems::Problem9 => Box::new(problem9::Problem9 {}),
+        Problems::Problem10 => Box::new(problem10::Problem10 {}),
+        Problems::Problem11 => Box::new(problem11::Problem11 {}),
     };
 
     println!("part 1");
     println!("example: {}", problem.solve_part1(&example_lines));
-    println!("problem: {}", problem.solve_part1(&input_lines));
+    if !args.example {
+        println!("problem: {}", problem.solve_part1(&input_lines));
+    }
 
     println!("\npart 2");
     println!("example: {}", problem.solve_part2(&example_lines));
-    println!("problem: {}", problem.solve_part2(&input_lines));
+    if !args.example {
+        println!("problem: {}", problem.solve_part2(&input_lines));
+    }
 }
