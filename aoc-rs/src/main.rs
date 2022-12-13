@@ -36,6 +36,8 @@ fn main() {
         Problems::Problem9 => Box::new(problem9::Problem9 {}),
         Problems::Problem10 => Box::new(problem10::Problem10 {}),
         Problems::Problem11 => Box::new(problem11::Problem11 {}),
+        Problems::Problem12 => Box::new(problem12::Problem12 {}),
+        Problems::Problem13 => Box::new(problem13::Problem13 {}),
     };
 
     println!("part 1");
