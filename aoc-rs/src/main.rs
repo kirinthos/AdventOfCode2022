@@ -11,6 +11,9 @@ struct Args {
 
     #[clap(short, long, value_parser, default_value_t = false)]
     example: bool,
+
+    #[clap(long, value_parser, default_value_t = false)]
+    part2: bool,
 }
 
 fn main() {
@@ -42,10 +45,12 @@ fn main() {
         Problems::Problem15 => Box::new(problem15::Problem15 {}),
     };
 
-    println!("part 1");
-    println!("example: {}", problem.solve_part1(&example_lines));
-    if !args.example {
-        println!("problem: {}", problem.solve_part1(&input_lines));
+    if !args.part2 {
+        println!("part 1");
+        println!("example: {}", problem.solve_part1(&example_lines));
+        if !args.example {
+            println!("problem: {}", problem.solve_part1(&input_lines));
+        }
     }
 
     println!("\npart 2");
