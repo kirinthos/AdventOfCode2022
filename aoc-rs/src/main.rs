@@ -38,7 +38,7 @@ fn main() {
         Problems::Problem11 => Box::new(problem11::Problem11 {}),
         Problems::Problem12 => Box::new(problem12::Problem12 {}),
         Problems::Problem13 => Box::new(problem13::Problem13 {}),
-        Problems::Problem14 => panic!(),
+        Problems::Problem14 => Box::new(problem14::Problem14 {}),
         Problems::Problem15 => Box::new(problem15::Problem15 {}),
     };
 
