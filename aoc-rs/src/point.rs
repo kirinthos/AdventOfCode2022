@@ -41,6 +41,10 @@ impl Point {
     pub fn y(&self) -> i32 {
         self.y
     }
+
+    pub fn manhattan_distance(&self, other: &Point) -> i32 {
+        (self.x() - other.x()).abs() + (self.y() - other.y()).abs()
+    }
 }
 
 impl<T: TryInto<i32>> From<(T, T)> for Point

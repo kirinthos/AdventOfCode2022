@@ -4,6 +4,7 @@ pub mod problem10;
 pub mod problem11;
 pub mod problem12;
 pub mod problem13;
+pub mod problem15;
 pub mod problem2;
 pub mod problem3;
 pub mod problem4;
@@ -37,6 +38,8 @@ pub enum Problems {
     Problem11,
     Problem12,
     Problem13,
+    Problem14,
+    Problem15,
 }
 
 pub trait Problem {

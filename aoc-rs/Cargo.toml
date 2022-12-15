@@ -9,4 +9,5 @@ edition = "2021"
 clap = { version = "3", features = [ "derive" ] }
 itertools = "0"
 num_enum = "0"
+regex = "1"
 take-until = "0"
