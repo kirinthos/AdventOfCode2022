@@ -43,6 +43,7 @@ fn main() {
         Problems::Problem13 => Box::new(problem13::Problem13 {}),
         Problems::Problem14 => Box::new(problem14::Problem14 {}),
         Problems::Problem15 => Box::new(problem15::Problem15 {}),
+        Problems::Problem16 => Box::new(problem16::Problem16 {}),
     };
 
     if !args.part2 {
