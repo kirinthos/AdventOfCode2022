@@ -1,6 +1,6 @@
 use crate::{point::Point, Problem};
 
-type Board = [[bool; 7]; 20000];
+type Board = [[bool; 7]; 40000];
 
 enum Direction {
     Left,
@@ -46,7 +46,7 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
 
     let mut moves = moves.chars().cycle();
     let mut next_piece = 0;
-    let mut map: Board = [[false; 7]; 20000];
+    let mut map: Board = [[false; 7]; 40000];
     let mut highest = 0;
     let mut highest_base = 0;
     let mut heights = Vec::new();
@@ -87,11 +87,13 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
 
                     heights.push(highest + highest_base);
 
-                    if highest > 3000 {
+                    /*
+                    if highest > 6000 {
                         shift_map(&mut map, 1000);
                         highest -= 1000;
                         highest_base += 1000;
                     }
+                    */
 
                     break;
                 }
@@ -103,8 +105,8 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
 }
 
 fn shift_map(map: &mut Board, n: usize) {
-    let mut b = [[false; 7]; 20000];
-    b[0..n].copy_from_slice(&map[n..(n + n)]);
+    let mut b = [[false; 7]; 40000];
+    b[0..(40000 - n)].copy_from_slice(&map[n..]);
     *map = b
 }
 
@@ -155,47 +157,42 @@ impl Problem for Problem17 {
     }
 
     fn solve_part2(&mut self, lines: &[String]) -> String {
-        let n = 600000;
+        let n = 20000;
         let heights = solve(lines[0].as_str(), n).1;
+        let diffs = heights
+            .iter()
+            .zip(heights.iter().skip(1))
+            .map(|(one, two)| two - one)
+            .collect::<Vec<_>>();
 
-        for start in 0..heights.len() {
-            let start_height = heights[start] as i64;
-            for period_size in 3..((n as usize - start) as usize / 2) {
-                if heights
-                    .iter()
-                    .skip(start)
-                    .take(period_size)
-                    .zip(heights.iter().skip(start + period_size).take(period_size))
-                    .all(|(one, two)| *one == (two - start_height as i32))
-                {
-                    println!(
-                        "start: {}, period: {}\nstart height: {}, period height: {}",
-                        start,
-                        period_size,
-                        heights[start],
-                        heights[start + period_size]
-                    );
-                    let mut turns = 1_000_000_000_000_i64;
+        for start in 1..heights.len() {
+            for period_size in 3..5000 {
+                let p1_end = start + period_size;
+                let p2_end = p1_end + period_size;
+                let p3_end = p2_end + period_size;
 
-                    // start
-                    turns -= start as i64;
+                if p2_end > diffs.len() {
+                    panic!("nothing found");
+                }
 
-                    // as many periods as we can fit
-                    let num_periods = turns / period_size as i64;
+                let p1 = &diffs[start..p1_end];
+                let p2 = &diffs[p1_end..p2_end];
+                let p3 = &diffs[p2_end..p3_end];
+                if p1 == p2 && p2 == p3 {
+                    let start_height = diffs[..start].iter().sum::<i32>() as i64;
+                    let period_height = p1.iter().sum::<i32>() as i64;
+
+                    let turns = 1_000_000_000_000_i64 - start as i64;
+                    let periods = turns / period_size as i64;
                     let remaining = turns % period_size as i64;
 
-                    let period_height =
-                        num_periods * (heights[start + period_size] as i64 - start_height);
-                    let remaining_height =
-                        heights[start + remaining as usize] as i64 - start_height as i64;
+                    let height = start_height
+                        + periods * period_height
+                        + diffs[p1_end..(p1_end + remaining as usize)]
+                            .iter()
+                            .sum::<i32>() as i64;
 
-                    println!("num_periods: {num_periods}, remaining: {remaining}");
-                    println!(
-                        "period height: {period_height}, remaining height: {remaining_height}"
-                    );
-
-                    return (heights[start - 1] as i64 + period_height + remaining_height)
-                        .to_string();
+                    return height.to_string();
                 }
             }
         }
