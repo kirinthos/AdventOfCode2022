@@ -48,7 +48,6 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
     let mut next_piece = 0;
     let mut map: Board = [[false; 7]; 40000];
     let mut highest = 0;
-    let mut highest_base = 0;
     let mut heights = Vec::new();
 
     for _ in 0..count {
@@ -85,7 +84,7 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
                         highest = highest.max(p.y() + 1);
                     }
 
-                    heights.push(highest + highest_base);
+                    heights.push(highest);
 
                     /*
                     if highest > 6000 {
@@ -102,12 +101,6 @@ fn solve(moves: &str, count: i64) -> (i32, Vec<i32>) {
     }
 
     (highest, heights)
-}
-
-fn shift_map(map: &mut Board, n: usize) {
-    let mut b = [[false; 7]; 40000];
-    b[0..(40000 - n)].copy_from_slice(&map[n..]);
-    *map = b
 }
 
 fn can_move(map: &Board, piece: &[Point], direction: Direction) -> bool {

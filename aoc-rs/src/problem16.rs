@@ -155,42 +155,16 @@ fn find_max_pressure(
     max_pressure
 }
 
-fn find_max_pressure_2(
-    graph: &[Vec<i32>],
-    viable_valves: &HashMap<usize, i32>,
-    valve_person: usize,
-    time_person: i32,
-    valve_elephant: usize,
-    time_elephant: i32,
-    opened: i64,
-) -> i32 {
-    let mut max_pressure = 0;
-    for (&valve, rate) in viable_valves.iter() {
-        let valve_position = 0x1 << valve;
-        // already opened
-        if opened & valve_position != 0 {
-            continue;
-        }
-
-        let (current_valve, time) = (valve_person, time_person);
-        let cost = graph[current_valve][valve] + 1;
-        if time - cost >= 0 {
-            max_pressure = max_pressure.max(
-                rate * (time - cost)
-                    + find_max_pressure_2(
-                        graph,
-                        viable_valves,
-                        valve,
-                        time - cost,
-                        valve_elephant,
-                        time_elephant,
-                        opened | valve_position,
-                    ),
-            )
-        }
-    }
-
-    max_pressure
+fn powerset<T>(s: &[T]) -> Vec<Vec<&T>> {
+    (0..2usize.pow(s.len() as u32))
+        .map(|i| {
+            s.iter()
+                .enumerate()
+                .filter(|&(t, _)| (i >> t) % 2 == 1)
+                .map(|(_, element)| element)
+                .collect()
+        })
+        .collect()
 }
 
 pub struct Problem16;
@@ -217,7 +191,34 @@ impl Problem for Problem16 {
             .map(|(k, _)| graph.nodes.get(k).unwrap())
             .filter(|node| node.item > 0)
             .map(|n| (*label_to_index.get(&n.label).unwrap(), n.item))
-            .collect();
-        find_max_pressure_2(&matrix, viable_valves, 0, 26, 0, 26, 0).to_string()
+            .collect::<HashMap<_, _>>();
+
+        // finding the other open valves
+        let complement: i64 = (1 << (viable_valves.iter().map(|(v, _)| v).max().unwrap() + 1)) - 1;
+        let valid_valves: i64 = viable_valves.keys().fold(0, |acc, n| 1 << n | acc);
+
+        let mut pressures = HashMap::new();
+        for v in powerset(&viable_valves.iter().collect::<Vec<(_, _)>>()) {
+            let opened = valves_to_bits(&v);
+            pressures.insert(
+                opened,
+                find_max_pressure(&matrix, viable_valves, 0, 26, opened),
+            );
+        }
+
+        println!("finding best combination");
+        let mut max_pressure = 0;
+        for (valves, pressure) in pressures.iter() {
+            let other_pressure = pressures
+                .get(&((valves ^ complement) & valid_valves))
+                .unwrap();
+            max_pressure = max_pressure.max(pressure + other_pressure)
+        }
+
+        max_pressure.to_string()
     }
+}
+
+fn valves_to_bits(valves: &[&(&usize, &i32)]) -> i64 {
+    valves.iter().fold(0, |acc, (&n, _)| (1 << n as i64) | acc)
 }
