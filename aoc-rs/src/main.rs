@@ -44,6 +44,7 @@ fn main() {
         Problems::Problem14 => Box::new(problem14::Problem14 {}),
         Problems::Problem15 => Box::new(problem15::Problem15 {}),
         Problems::Problem16 => Box::new(problem16::Problem16 {}),
+        Problems::Problem17 => Box::new(problem17::Problem17 {}),
     };
 
     if !args.part2 {

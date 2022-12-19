@@ -1,8 +1,4 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    rc::Rc,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use regex;
 
@@ -29,37 +25,11 @@ where
     fn add_next(&self, next: &Rc<Node<Label, T>>) {
         self.next.borrow_mut().push(Rc::clone(next));
     }
-
-    // slow version of this, i imagine
-    fn path_to_node(&self, label: &Label) -> Vec<Label> {
-        let mut paths = self.path_to_node_inner(label, Vec::new());
-        paths.sort_by_key(|p| p.len());
-        paths.into_iter().next().unwrap()
-    }
-
-    fn path_to_node_inner(&self, label: &Label, mut current_path: Vec<Label>) -> Vec<Vec<Label>> {
-        // cycle
-        if current_path.contains(&self.label) {
-            return vec![];
-        }
-
-        current_path.push(self.label.clone());
-        match current_path.contains(label) {
-            true => vec![current_path],
-            false => self
-                .next
-                .borrow()
-                .iter()
-                .flat_map(|next_node| next_node.path_to_node_inner(label, current_path.clone()))
-                .collect(),
-        }
-    }
 }
 
 type PNode = Rc<Node<String, i32>>;
 
 struct DirectedGraph<Label, T> {
-    start: Rc<Node<Label, T>>,
     nodes: HashMap<String, Rc<Node<Label, T>>>,
 }
 
@@ -96,11 +66,7 @@ fn read_input(lines: &[String]) -> DirectedGraph<String, i32> {
                 .for_each(|name| node.add_next(node_map.get(name).unwrap()));
         });
 
-    let start = Rc::clone(node_map.get("AA").unwrap());
-    DirectedGraph {
-        start,
-        nodes: node_map,
-    }
+    DirectedGraph { nodes: node_map }
 }
 
 fn distance_matrix(graph: &DirectedGraph<String, i32>) -> (HashMap<String, usize>, Vec<Vec<i32>>) {
@@ -206,7 +172,6 @@ fn find_max_pressure_2(
             continue;
         }
 
-        // person does it
         let (current_valve, time) = (valve_person, time_person);
         let cost = graph[current_valve][valve] + 1;
         if time - cost >= 0 {
@@ -219,24 +184,6 @@ fn find_max_pressure_2(
                         time - cost,
                         valve_elephant,
                         time_elephant,
-                        opened | valve_position,
-                    ),
-            )
-        }
-
-        // elephant does it
-        let (current_valve, time) = (valve_elephant, time_elephant);
-        let cost = graph[current_valve][valve] + 1;
-        if time - cost >= 0 {
-            max_pressure = max_pressure.max(
-                rate * (time - cost)
-                    + find_max_pressure_2(
-                        graph,
-                        viable_valves,
-                        valve_person,
-                        time_person,
-                        valve,
-                        time - cost,
                         opened | valve_position,
                     ),
             )
