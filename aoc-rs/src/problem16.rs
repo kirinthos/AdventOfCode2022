@@ -1,10 +1,9 @@
 use std::{
     cell::RefCell,
-    collections::{HashMap, HashSet},
+    collections::HashMap,
     rc::Rc,
 };
 
-use itertools::Itertools;
 use regex;
 
 use crate::Problem;
@@ -104,122 +103,147 @@ fn read_input(lines: &[String]) -> DirectedGraph<String, i32> {
     }
 }
 
-/* Brute force, sloooowww
-fn open_valves(graph: &DirectedGraph<String, i32>) -> Vec<i32> {
-    let valuable_nodes: HashSet<_> = graph
-        .nodes
-        .values()
-        .filter(|n| n.item > 0)
-        .map(|n| n.label.as_str())
-        .collect();
+fn distance_matrix(graph: &DirectedGraph<String, i32>) -> (HashMap<String, usize>, Vec<Vec<i32>>) {
+    let number_of_nodes = graph.nodes.len();
+    let mut ordered_node_labels = graph.nodes.keys().collect::<Vec<_>>();
+    ordered_node_labels.sort();
 
-    open_valves_inner(&valuable_nodes, &graph.start, HashSet::new(), 0, 0)
-}
+    let mut v: Vec<Vec<i32>> =
+        std::iter::repeat(std::iter::repeat(1000).take(number_of_nodes).collect())
+            .take(number_of_nodes)
+            .collect();
 
-fn open_valves_inner(
-    valuable_nodes: &HashSet<&str>,
-    current_node: &PNode,
-    opened_valves: HashSet<&str>,
-    counter: i32,
-    released: i32,
-) -> Vec<i32> {
-    if (valuable_nodes - &opened_valves).is_empty() || counter >= 30 {
-        return vec![released];
-    }
+    (0..number_of_nodes).for_each(|i| {
+        v[i][i] = 0;
+    });
 
-    let mut v = Vec::new();
-    // otherwise we could open the current valve
-    if current_node.item > 0 && !opened_valves.contains(current_node.label.as_str()) {
-        let mut opened_valves = opened_valves.clone();
-        opened_valves.insert(&current_node.label);
-        v.extend(
-            open_valves_inner(
-                valuable_nodes,
-                current_node,
-                opened_valves,
-                counter + 1,
-                released + current_node.item * (30 - counter),
-            )
-            .into_iter(),
-        );
-    }
-
-    // or we could move to another valve
-    v.extend(current_node.next.borrow().iter().flat_map(|next_node| {
-        open_valves_inner(
-            valuable_nodes,
-            next_node,
-            opened_valves.clone(),
-            counter + 1,
-            released,
-        )
-        .into_iter()
-    }));
-
-    v
-}
-*/
-
-fn open_valves(graph: &DirectedGraph<String, i32>) -> Vec<i32> {
-    let valuable_nodes: HashSet<_> = graph
-        .nodes
-        .values()
-        .into_iter()
-        .filter_map(|n| match n.item > 0 {
-            true => Some(n.label.clone()),
-            false => None,
-        })
-        .collect();
-
-    let v = open_valves_inner(
-        graph,
-        &valuable_nodes,
-        vec![graph.start.label.clone()],
-        30,
-        0,
-    );
-    for (path, released) in v.iter() {
-        println!("released {} on path {:?}", released, path);
-    }
-    v.into_iter().map(|(_, a)| a).collect()
-}
-
-fn open_valves_inner(
-    graph: &DirectedGraph<String, i32>,
-    valuable_nodes: &HashSet<String>,
-    current_path: Vec<String>,
-    counter: i32,
-    released: i32,
-) -> Vec<(Vec<String>, i32)> {
-    if counter <= 0
-        || valuable_nodes
-            .iter()
-            .all(|label| current_path.contains(label))
-    {
-        return vec![(current_path, released)];
-    }
-
-    let current_node = graph.nodes.get(current_path.last().unwrap()).unwrap();
-
-    valuable_nodes
+    ordered_node_labels
         .iter()
-        .filter(|n| !current_path.contains(n))
-        .map(|n| current_node.path_to_node(n))
-        .flat_map(|next_path| {
-            let mut p = current_path.clone();
-            let next_node = graph.nodes.get(next_path.last().unwrap()).unwrap();
-            let counter = counter - next_path.len() as i32;
+        .enumerate()
+        .for_each(|(i, &node_label)| {
+            graph
+                .nodes
+                .get(node_label)
+                .unwrap()
+                .next
+                .borrow()
+                .iter()
+                .for_each(|next_node| {
+                    let next_i = ordered_node_labels
+                        .iter()
+                        .position(|&label| label == &next_node.label)
+                        .unwrap();
+                    v[i][next_i] = 1;
+                });
+        });
 
-            p.extend(next_path.into_iter().skip(1));
-            open_valves_inner(
-                graph,
-                valuable_nodes,
-                p,
-                counter,
-                released + next_node.item * counter,
+    // floyd-warshall algorithm
+    for k in 0..number_of_nodes {
+        for i in 0..number_of_nodes {
+            for j in 0..number_of_nodes {
+                v[i][j] = v[i][j].min(v[i][k] + v[k][j]);
+            }
+        }
+    }
+
+    (
+        ordered_node_labels
+            .into_iter()
+            .enumerate()
+            .map(|(i, label)| (label.clone(), i))
+            .collect(),
+        v,
+    )
+}
+
+fn find_max_pressure(
+    graph: &[Vec<i32>],
+    viable_valves: &HashMap<usize, i32>,
+    current_valve: usize,
+    time: i32,
+    opened: i64,
+) -> i32 {
+    let mut max_pressure = 0;
+    for (&valve, rate) in viable_valves.iter() {
+        let valve_position = 0x1 << valve;
+        // already opened
+        if opened & valve_position != 0 {
+            continue;
+        }
+
+        let cost = graph[current_valve][valve] + 1;
+        if time - cost >= 0 {
+            max_pressure = max_pressure.max(
+                rate * (time - cost)
+                    + find_max_pressure(
+                        graph,
+                        viable_valves,
+                        valve,
+                        time - cost,
+                        opened | valve_position,
+                    ),
             )
-        })
-        .collect()
+        }
+    }
+
+    max_pressure
+}
+
+fn find_max_pressure_2(
+    graph: &[Vec<i32>],
+    viable_valves: &HashMap<usize, i32>,
+    valve_person: usize,
+    time_person: i32,
+    valve_elephant: usize,
+    time_elephant: i32,
+    opened: i64,
+) -> i32 {
+    let mut max_pressure = 0;
+    for (&valve, rate) in viable_valves.iter() {
+        let valve_position = 0x1 << valve;
+        // already opened
+        if opened & valve_position != 0 {
+            continue;
+        }
+
+        // person does it
+        let (current_valve, time) = (valve_person, time_person);
+        let cost = graph[current_valve][valve] + 1;
+        if time - cost >= 0 {
+            max_pressure = max_pressure.max(
+                rate * (time - cost)
+                    + find_max_pressure_2(
+                        graph,
+                        viable_valves,
+                        valve,
+                        time - cost,
+                        valve_elephant,
+                        time_elephant,
+                        opened | valve_position,
+                    ),
+            )
+        }
+
+        // elephant does it
+        let (current_valve, time) = (valve_elephant, time_elephant);
+        let cost = graph[current_valve][valve] + 1;
+        if time - cost >= 0 {
+            max_pressure = max_pressure.max(
+                rate * (time - cost)
+                    + find_max_pressure_2(
+                        graph,
+                        viable_valves,
+                        valve_person,
+                        time_person,
+                        valve,
+                        time - cost,
+                        opened | valve_position,
+                    ),
+            )
+        }
+    }
+
+    max_pressure
 }
 
 pub struct Problem16;
@@ -227,10 +251,26 @@ impl Problem for Problem16 {
     fn solve_part1(&mut self, lines: &[String]) -> String {
         let graph = read_input(lines);
 
-        open_valves(&graph).into_iter().max().unwrap().to_string()
+        let (label_to_index, matrix) = distance_matrix(&graph);
+        let viable_valves = &label_to_index
+            .iter()
+            .map(|(k, _)| graph.nodes.get(k).unwrap())
+            .filter(|node| node.item > 0)
+            .map(|n| (*label_to_index.get(&n.label).unwrap(), n.item))
+            .collect();
+        find_max_pressure(&matrix, viable_valves, 0, 30, 0).to_string()
     }
 
-    fn solve_part2(&mut self, _lines: &[String]) -> String {
-        todo!()
+    fn solve_part2(&mut self, lines: &[String]) -> String {
+        let graph = read_input(lines);
+
+        let (label_to_index, matrix) = distance_matrix(&graph);
+        let viable_valves = &label_to_index
+            .iter()
+            .map(|(k, _)| graph.nodes.get(k).unwrap())
+            .filter(|node| node.item > 0)
+            .map(|n| (*label_to_index.get(&n.label).unwrap(), n.item))
+            .collect();
+        find_max_pressure_2(&matrix, viable_valves, 0, 26, 0, 26, 0).to_string()
     }
 }
